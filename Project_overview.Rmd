@@ -1,0 +1,33 @@
+---
+title: "Project Overview - Understand fish community composition across nearshore habitats in southeast Alaska"
+author: "Wendel Raymond"
+date: "September 7, 2018"
+output: 
+  beamer_presentation:
+  slide_level: 2
+editor_options:
+  chunk_output_type: console
+---
+
+```{r libraries, echo = FALSE, message = FALSE, warning = FALSE}
+library(dplyr)
+library(ggplot2)
+library(leaflet)
+library(DT)
+```
+
+```{r data, echo = FALSE, message = FALSE, warning = FALSE}
+noaa <- read.csv("Data/NOAA_All_Data.csv", header = TRUE, stringsAsFactors = FALSE)
+```
+
+# Understanding fish community composition across nearshore habitats in southeast Alaska
+
+## Goal and Objectives
+- Goal
+  1.Understand how fish community composition differs across nearshore habitats in southeast Alaska
+
+- Objectives
+  1. Build a statistical model to relate community structure (multivariate) to habitat characteristics
+  2. Build a statistical model to relate juvenile abundance of harvested species/groups (e.g. Salmonidae, Gadidae) to habitat characteristics.
+  
+![](E:/wraymond2/My Documents/Graduate School/Photos/Shorezone/ak_shorezone_full_01.jpg)
