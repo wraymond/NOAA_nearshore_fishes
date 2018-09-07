@@ -2,8 +2,10 @@
 title: "NOAA nearshore fish atlas project proposal"
 author: "Wendel Raymond"
 date: "September 3, 2018"
-output: html_document
-editor_options: 
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
   chunk_output_type: console
 ---
 
