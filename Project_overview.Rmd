@@ -1,0 +1,58 @@
+---
+title: Project overview - Understanding fish communities across nearshore habitats
+  in southeast Alaska
+author: "Wendel Raymond"
+date: "September 7, 2018"
+output: beamer_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r libraries, warning = FALSE, message = FALSE}
+library(dplyr)
+library(DT)
+library(ggplot2)
+```
+
+
+## Goals and Objectives
+- Goal
+    + Understand fish community composition across nearshore habitats in southeast Alaska
+
+- Objectives
+  1. Build a statistical model to relate community structure (multivariate) to habitat characteristics
+  2. Build a statistical model to relate juvenile abundance of harvested species/groups (e.g. Salmonidae, Gadidae) to habitat characteristics
+
+## Background - Data
+- Atlas of Nearshore Fishes of Alaska
+    + 1998 - 2011
+    + 555 unique sites
+    + Walleye pollock, Pacific herring, pink salmon, and chum salmon accounted for 55% of total catch
+
+- Habitats
+    + Bedrock
+    + Eelgrass
+    + Understory kelp
+    + sand / gravel
+
+## Background - Analyses
+- Previous Analyses
+    + NOAA technical memoranda and a few peer-reviewed papers 
+    + Summary statistics, small geographic scale
+    + Fish community appears to differ across habitats
+
+- Data analysis in community ecology class project
+    + Began to tackle this question of community composition as a function of habitat
+    + Results later
+
+## Data
+```{r data}
+noaa <- read.csv("Data/NOAA_All_Data.csv", header = TRUE, stringsAsFactors = FALSE)
+```
+
+```{r}
+names(noaa)
+```
+
