@@ -1,0 +1,180 @@
+\documentclass[ignorenonframetext,]{beamer}
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{caption label separator}{: }
+\setbeamercolor{caption name}{fg=normal text.fg}
+\beamertemplatenavigationsymbolsempty
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\newif\ifbibliography
+\hypersetup{
+            pdftitle={Project overview - Understanding fish communities across nearshore habitats in southeast Alaska},
+            pdfauthor={Wendel Raymond},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+
+% Prevent slide breaks in the middle of a paragraph:
+\widowpenalties 1 10000
+\raggedbottom
+
+\AtBeginPart{
+  \let\insertpartnumber\relax
+  \let\partname\relax
+  \frame{\partpage}
+}
+\AtBeginSection{
+  \ifbibliography
+  \else
+    \let\insertsectionnumber\relax
+    \let\sectionname\relax
+    \frame{\sectionpage}
+  \fi
+}
+\AtBeginSubsection{
+  \let\insertsubsectionnumber\relax
+  \let\subsectionname\relax
+  \frame{\subsectionpage}
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+
+\title{Project overview - Understanding fish communities across nearshore
+habitats in southeast Alaska}
+\author{Wendel Raymond}
+\date{September 7, 2018}
+
+\begin{document}
+\frame{\titlepage}
+
+\begin{frame}{Goals and Objectives}
+
+\begin{itemize}
+\tightlist
+\item
+  Goal
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Understand fish community composition across nearshore habitats in
+    southeast Alaska
+  \end{itemize}
+\item
+  Objectives
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Build a statistical model to relate community structure (multivariate)
+  to habitat characteristics
+\item
+  Build a statistical model to relate juvenile abundance of harvested
+  species/groups (e.g.~Salmonidae, Gadidae) to habitat characteristics
+\end{enumerate}
+
+\end{frame}
+
+\begin{frame}{Background - Data}
+
+\begin{itemize}
+\tightlist
+\item
+  Atlas of Nearshore Fishes of Alaska
+
+  \begin{itemize}
+  \tightlist
+  \item
+    1998 - 2011
+  \item
+    555 unique sites
+  \item
+    Walleye pollock, Pacific herring, pink salmon, and chum salmon
+    accounted for 55\% of total catch
+  \end{itemize}
+\item
+  Habitats
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Bedrock
+  \item
+    Eelgrass (Seagrass)
+  \item
+    Understory kelp
+  \item
+    Sand / Gravel
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Background - Analyses}
+
+\begin{itemize}
+\tightlist
+\item
+  Previous Analyses
+
+  \begin{itemize}
+  \tightlist
+  \item
+    NOAA technical memoranda and a few peer-reviewed papers
+  \item
+    Summary statistics, small geographic scale
+  \item
+    Fish community appears to differ across habitats
+  \end{itemize}
+\item
+  Data analysis in community ecology class project
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Began to tackle this question of community composition as a function
+    of habitat
+  \item
+    Results later
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]{Data}
+
+\begin{verbatim}
+## PhantomJS not found. You can install it with webshot::install_phantomjs(). If it is installed, please make sure the phantomjs executable can be found via the PATH variable.
+\end{verbatim}
+
+\hypertarget{htmlwidget-6ffb316bede88b1ceb8f}{}
+
+\end{frame}
+
+\end{document}

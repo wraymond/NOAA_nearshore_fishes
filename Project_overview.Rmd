@@ -3,7 +3,7 @@ title: Project overview - Understanding fish communities across nearshore habita
   in southeast Alaska
 author: "Wendel Raymond"
 date: "September 7, 2018"
-output: beamer_presentation
+output: slidy_presentation
 ---
 
 ```{r setup, include=FALSE}
@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = FALSE)
 library(dplyr)
 library(DT)
 library(ggplot2)
+library(leaflet)
 ```
 
 
@@ -33,9 +34,9 @@ library(ggplot2)
 
 - Habitats
     + Bedrock
-    + Eelgrass
+    + Eelgrass (Seagrass)
     + Understory kelp
-    + sand / gravel
+    + Sand / Gravel
 
 ## Background - Analyses
 - Previous Analyses
@@ -48,11 +49,62 @@ library(ggplot2)
     + Results later
 
 ## Data
-```{r data}
+- Explanatory
+    + Site information
+    + Lat/Long
+    + Temp/Salinity
+    + Date
+    + Habitat Type
+
+## Data
+- Response 
+    + Species
+    + Life Stage
+    + Fork Length
+    + Count of unmeasured fish
+
+```{r load data}
 noaa <- read.csv("Data/NOAA_All_Data.csv", header = TRUE, stringsAsFactors = FALSE)
+
+## Re order so explanatory variables are on the left and response variables are on the right
+noaa <- cbind.data.frame(noaa[,1:10], noaa[15:26], noaa[,11:14])
+
+#####----- Habitat Clean up -----#####
+# Rename Sand-gravel to Sand-Gravel
+noaa$Habitat <- as.factor(noaa$Habitat)
+levels(noaa$Habitat)[levels(noaa$Habitat)=="Sand-gravel"] <- "Sand-Gravel"
+levels(noaa$Habitat)[levels(noaa$Habitat)=="Surfgrass"] <- "Eelgrass"
 ```
 
+## Lets take a look
 ```{r}
-names(noaa)
+datatable(head(noaa))
 ```
 
+## Where is the data?
+```{r map}
+pal <- colorFactor(c("black", "green", "chocolate4", "orange", "blue"), domain = c("Bedrock", "Eelgrass", "Kelp", "Sand-Gravel", "Surfgrass"))
+leaflet() %>% 
+  addTiles() %>% 
+  addCircleMarkers(data = noaa[noaa$Region == "southeastern Alaska",], ~Long1, ~Lat1, color = ~pal(Habitat), fillOpacity = 1, stroke = FALSE, radius = 5, label = ~Habitat) %>% 
+  addLegend(pal = pal, values = c("Kelp", "Eelgrass", "Surfgrass", "Bedrock", "Sand-Gravel"), opacity = 1)
+```
+
+## Proposed data processing
+The data *may* need some work before its ready for full analysis.
+
+1. Assigning unmeasured fish FL based off the population sample
+2. Converting FL to mass
+3. Append/have full taxonomic information ready for each species
+
+## Previous modeling approaches
+Tested for the effect of Habitat on fish community composition 
+- Habitat only
+- Counts
+
+PERMANOVA results indicated that fish community composition was significantly different among habitats (psudo-F = 17.04, p-value < 0.001). 
+
+## Modeling approach
+1. Build a statistical model to relate community structure (multivariate) to habitat characteristics
+
+$ fish comm = Habitat $
