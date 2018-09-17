@@ -3,7 +3,10 @@ title: Project overview - Understanding fish communities across nearshore habita
   in southeast Alaska
 author: "Wendel Raymond"
 date: "September 7, 2018"
-output: slidy_presentation
+output:
+  slidy_presentation: default
+mathjax: default
+font-family: Helvetica
 ---
 
 ```{r setup, include=FALSE}
@@ -27,6 +30,9 @@ library(leaflet)
   2. Build a statistical model to relate juvenile abundance of harvested species/groups (e.g. Salmonidae, Gadidae) to habitat characteristics
 
 ## Background - Data
+
+*** left
+
 - Atlas of Nearshore Fishes of Alaska
     + 1998 - 2011
     + 555 unique sites
@@ -37,6 +43,10 @@ library(leaflet)
     + Eelgrass (Seagrass)
     + Understory kelp
     + Sand / Gravel
+
+*** right
+
+<img src="Figures/NOAA_atlas.png" width=400 height=750>
 
 ## Background - Analyses
 - Previous Analyses
@@ -76,7 +86,7 @@ levels(noaa$Habitat)[levels(noaa$Habitat)=="Sand-gravel"] <- "Sand-Gravel"
 levels(noaa$Habitat)[levels(noaa$Habitat)=="Surfgrass"] <- "Eelgrass"
 ```
 
-## Lets take a look
+## Lets take a look {.smaller}
 ```{r}
 datatable(head(noaa))
 ```
@@ -99,12 +109,34 @@ The data *may* need some work before its ready for full analysis.
 
 ## Previous modeling approaches
 Tested for the effect of Habitat on fish community composition 
+
 - Habitat only
 - Counts
 
 PERMANOVA results indicated that fish community composition was significantly different among habitats (psudo-F = 17.04, p-value < 0.001). 
 
-## Modeling approach
+## Proposed approach
 1. Build a statistical model to relate community structure (multivariate) to habitat characteristics
 
-$ fish comm = Habitat $
+$ fish comm ~ Habitat + time + ??? $
+
+2. Build a statistical model to relate juvenile abundance of harvested species/groups (e.g. Salmonidae, Gadidae) to habitat characteristics
+
+$ Salmonidae ~ Habitat + time + ??? $
+
+## Things to work on
+$ fish comm ~ Habitat + time + ??? $
+
+$ Salmonidae ~ Habitat + time + ??? $
+
+1. What should the response really be? 
+- counts?
+- mass?
+- remove rare species?
+
+2. What factors should be in the global model?
+- Habitat + time
+- Location (Lat/Long, subregion)?
+- Temp, salinity?
+- Distance to anadromous stream?
+- Distance to salmon hatchery release site?
