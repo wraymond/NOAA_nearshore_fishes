@@ -1,0 +1,177 @@
+<style>
+.footer {
+    color: black; background: #E8E8E8;
+    position: fixed; top: 90%;
+    text-align:center; width:100%;
+}
+.small-code pre code {
+  font-size: 1em;
+}
+</style>
+
+
+
+Project overview - Understanding fish communities across nearshore habitats
+========================================================
+author: Wendel Raymond  
+date: 9/18/2018
+font-family: 'Helvetica'
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r libraries, warning = FALSE, message = FALSE}
+library(dplyr)
+library(DT)
+library(ggplot2)
+library(leaflet)
+library(htmlwidgets)
+```
+
+Goals and Objectives
+========================================================
+  - Goal
+    + Understand fish community composition across nearshore habitats in southeast Alaska
+
+  - Objectives
+    1. Build a statistical model to relate community structure (multivariate) to habitat characteristics
+    2. Build a statistical model to relate juvenile abundance of harvested species/groups (e.g. Salmonidae, Gadidae) to habitat characteristics
+
+Background - Data
+========================================================
+<small>
+  - Atlas of Nearshore Fishes of Alaska
+    + 1998 - 2011
+    + 555 unique sites
+    + Walleye pollock, Pacific herring, pink salmon, and chum salmon accounted for 55% of total catch
+
+  - Habitats
+    + Bedrock
+    + Eelgrass (Seagrass)
+    + Understory kelp
+    + Sand / Gravel
+
+***
+
+![](Figures/NOAA_atlas.png)
+</small>
+Background - Analyses
+========================================================
+  - Previous Analyses
+    + NOAA technical memoranda and a few peer-reviewed papers 
+    + Summary statistics, small geographic scale
+    + Fish community appears to differ across habitats
+
+  - Data analysis in community ecology class project
+    + Began to tackle this question of community composition as a function of habitat
+    + Results later
+
+Data
+========================================================
+  - Explanatory
+    + Site information
+    + Lat/Long
+    + Temp/Salinity
+    + Date
+    + Habitat Type
+
+Data
+========================================================
+  - Response 
+    + Species
+    + Life Stage
+    + Fork Length
+    + Count of unmeasured fish
+
+Data
+========================================================
+```{r load data, echo=FALSE}
+noaa <- read.csv("Data/NOAA_All_Data.csv", header = TRUE, stringsAsFactors = FALSE)
+
+## Re order so explanatory variables are on the left and response variables are on the right
+noaa <- cbind.data.frame(noaa[,1:10], noaa[15:26], noaa[,11:14])
+
+#####----- Habitat Clean up -----#####
+# Rename Sand-gravel to Sand-Gravel
+noaa$Habitat <- as.factor(noaa$Habitat)
+levels(noaa$Habitat)[levels(noaa$Habitat)=="Sand-gravel"] <- "Sand-Gravel"
+levels(noaa$Habitat)[levels(noaa$Habitat)=="Surfgrass"] <- "Eelgrass"
+```
+
+```{r, echo = FALSE}
+dat.head <- datatable(head(noaa))
+saveWidget(dat.head, file = "dat.head.html")
+```
+
+<iframe src = "dat.head.html" style="position:absolute;height:90%;width:100%"></iframe>
+
+Data
+======================================================
+```{r map}
+pal <- colorFactor(c("black", "green", "chocolate4", "orange", "blue"), domain = c("Bedrock", "Eelgrass", "Kelp", "Sand-Gravel", "Surfgrass"))
+
+dat.map <- leaflet() %>% 
+  addTiles() %>% 
+  addCircleMarkers(data = noaa[noaa$Region == "southeastern Alaska",], ~Long1, ~Lat1, color = ~pal(Habitat), fillOpacity = 1, stroke = FALSE, radius = 5, label = ~Habitat) %>% 
+  addLegend(pal = pal, values = c("Kelp", "Eelgrass", "Surfgrass", "Bedrock", "Sand-Gravel"), opacity = 1)
+
+saveWidget(dat.map, file = "dat.map.html")
+```
+
+<iframe src = "dat.map.html" style="position:absolute;height:100%;width:100%"></iframe>
+
+Proposed data processing
+======================================================
+The data *may* need some work before its ready for full analysis.
+
+1. Assigning unmeasured fish FL based off the population sample
+2. Converting FL to mass
+3. Append/have full taxonomic information ready for each species
+  - To group at higher taxonomic level
+
+Previous modeling approaches
+======================================================
+Tested for the effect of Habitat on fish community composition 
+
+  - Habitat only
+  - Counts
+
+PERMANOVA results indicated that fish community composition was significantly different among habitats (psudo-F = 17.04, p-value < 0.001).
+
+Previous modeling approaches
+======================================================
+<div align="center">
+<img src="Figures/dispersion.png" width=600 height=600>
+</div>
+
+Proposed approach
+======================================================
+1. Build a statistical model to relate community structure (multivariate) to habitat characteristics
+
+$$ fish comm ~ Habitat + time + ??? $$
+
+2. Build a statistical model to relate juvenile abundance of harvested species/groups (e.g. Salmonidae, Gadidae) to habitat characteristics
+
+$$ Salmonidae ~ Habitat + time + ??? $$
+
+Things to work on
+======================================================
+$$ fish comm ~ Habitat + time + ??? $$
+
+$$ Salmonidae ~ Habitat + time + ??? $$
+
+1. What should the response really be? 
+  - counts?
+  - mass?
+  - remove rare species?
+
+***
+
+2. What factors should be in the global model?
+  - Habitat + time
+  - Location (Lat/Long, sub-region)?
+  - Temp, salinity?
+  - Distance to anadromous stream?
+  - Distance to salmon hatchery release site?
