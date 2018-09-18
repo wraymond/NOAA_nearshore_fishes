@@ -9,9 +9,7 @@
 }
 </style>
 
-
-
-Project overview - Understanding fish communities across nearshore habitats
+Understanding fish communities across nearshore habitats
 ========================================================
 author: Wendel Raymond  
 date: 9/18/2018
@@ -57,6 +55,7 @@ Background - Data
 
 ![](Figures/NOAA_atlas.png)
 </small>
+
 Background - Analyses
 ========================================================
   - Previous Analyses
@@ -71,18 +70,19 @@ Background - Analyses
 Data
 ========================================================
   - Explanatory
-    + Site information
+    + Site information (region, sub-region, locale)
     + Lat/Long
     + Temp/Salinity
+    + Gear Type
     + Date
-    + Habitat Type
+    + Habitat
 
 Data
 ========================================================
   - Response 
     + Species
     + Life Stage
-    + Fork Length
+    + Fork Length (FL)
     + Count of unmeasured fish
 
 Data
@@ -126,10 +126,10 @@ Proposed data processing
 ======================================================
 The data *may* need some work before its ready for full analysis.
 
-1. Assigning unmeasured fish FL based off the population sample
-2. Converting FL to mass
+1. Assign unmeasured fish FL based off the population* sample
+2. Convert FL to mass
 3. Append/have full taxonomic information ready for each species
-  - To group at higher taxonomic level
+  - To group at higher taxonomic levels
 
 Previous modeling approaches
 ======================================================
@@ -137,6 +137,8 @@ Tested for the effect of Habitat on fish community composition
 
   - Habitat only
   - Counts
+
+$$ fish community (counts) = Habitat $$
 
 PERMANOVA results indicated that fish community composition was significantly different among habitats (psudo-F = 17.04, p-value < 0.001).
 
@@ -150,28 +152,42 @@ Proposed approach
 ======================================================
 1. Build a statistical model to relate community structure (multivariate) to habitat characteristics
 
-$$ fish comm ~ Habitat + time + ??? $$
+$$ fish community = Habitat + time + ....$$
 
 2. Build a statistical model to relate juvenile abundance of harvested species/groups (e.g. Salmonidae, Gadidae) to habitat characteristics
 
-$$ Salmonidae ~ Habitat + time + ??? $$
+$$ Salmonidae = Habitat + time + .... $$
 
 Things to work on
 ======================================================
-$$ fish comm ~ Habitat + time + ??? $$
+$$ fish community = Habitat + time + .... $$
 
-$$ Salmonidae ~ Habitat + time + ??? $$
+$$ Salmonidae = Habitat + time + .... $$
 
-1. What should the response really be? 
-  - counts?
-  - mass?
-  - remove rare species?
+  - What should the response really be? 
+    + counts? - probably not, masks hugh variation in size and abundance
+    + mass?
+    + remove rare species? - what counts as rare?
 
 ***
 
-2. What factors should be in the global model?
-  - Habitat + time
-  - Location (Lat/Long, sub-region)?
-  - Temp, salinity?
-  - Distance to anadromous stream?
-  - Distance to salmon hatchery release site?
+  - What factors should be in the global model?
+    + Habitat + time*
+    + Location (Lat/Long, sub-region)?
+    + Temp, salinity?
+    + Distance to anadromous stream?
+    + Distance to salmon hatchery release site?
+
+Things to work on
+======================================================
+Multivariate analysis
+  - Response will need to be examined for normality
+  
+  - Transform and standardize
+
+Work flow
+======================================================
+
+ - [GitHub](www.github.com/wraymond/NOAA_nearshore_atlas)
+ 
+ ![](https://upload.wikimedia.org/wikipedia/commons/2/24/GitHub_logo_2013_padded.svg)
