@@ -157,6 +157,6 @@ Multivariate analysis
 Work flow
 ======================================================
 
- - [GitHub](www.github.com/wraymond/NOAA_nearshore_atlas)
+ - [GitHub](www.github.com/wraymond/NOAA_nearshore_fishes)
  
  ![](https://upload.wikimedia.org/wikipedia/commons/2/24/GitHub_logo_2013_padded.svg)
