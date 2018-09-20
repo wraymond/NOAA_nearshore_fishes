@@ -1,0 +1,29 @@
+---
+title: "Data_exploration"
+author: "Wendel Raymond"
+date: "September 20, 2018"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Data Exploration
+Examining the NOAA fish atlas data.
+
+```{r libraries}
+library(dplyr)
+library(DT)
+library(ggplot2)
+```
+
+
+```{r data}
+noaa <- read.csv("Data/NOAA_All_Data.csv", header = TRUE, stringsAsFactors = FALSE)
+```
+
+## Data structure
+```{r}
+unique(noaa$EventID)
+unique(noaa$Region)
+```
+
