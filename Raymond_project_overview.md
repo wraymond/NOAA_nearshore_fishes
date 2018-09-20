@@ -134,7 +134,7 @@ $$ fish community = Habitat + time + .... $$
 $$ Salmonidae = Habitat + time + .... $$
 
   - What should the response really be? 
-    + counts? - probably not, masks hugh variation in size and abundance
+    + counts? - probably not, masks huge variation in size and abundance
     + mass?
     + remove rare species? - what counts as rare?
 
