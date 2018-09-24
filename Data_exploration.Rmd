@@ -14,16 +14,70 @@ Examining the NOAA fish atlas data.
 library(dplyr)
 library(DT)
 library(ggplot2)
+library(leaflet)
+library(mapview)
+library(sp)
 ```
 
 
 ```{r data}
-noaa <- read.csv("Data/NOAA_All_Data.csv", header = TRUE, stringsAsFactors = FALSE)
+noaa <- read.csv("Data/NOAA_All_Data_24092018.csv", header = TRUE, stringsAsFactors = FALSE)
 ```
 
 ## Data structure
-```{r}
+```{r structure}
+str(noaa)
 unique(noaa$EventID)
 unique(noaa$Region)
+unique(noaa$Exposure)
+```
+
+## Data coverage
+Since I am interested in habitat effects on fish community composition it is important to understand how many sites are of each hanitat in differnent years and in different locations. But first I need to so some quick data clean up. To rename habitat types and exclude the one surfgrass site.
+
+```{r data clean}
+# Rename Sand-gravel to Sand-Gravel
+noaa$Habitat <- as.factor(noaa$Habitat)
+levels(noaa$Habitat)[levels(noaa$Habitat)=="Sand-gravel"] <- "Sand-Gravel"
+```
+
+
+```{r coverage}
+se.hab <- noaa %>% 
+  filter(Region == "southeastern Alaska") %>% 
+  filter(Habitat != "Surfgrass") %>% 
+  group_by(Habitat, Mon) %>% 
+  summarise(count = n_distinct(EventID))
+
+se.loc <- noaa %>% 
+  filter(Region == "southeastern Alaska") %>% 
+  filter(Habitat != "Surfgrass") %>% 
+  group_by(Habitat, Location) %>% 
+  summarise(count = n_distinct(EventID))
+```
+
+So it appears that there is reasonable habitat replication across months, but not some much acorss locations. Is may be necessary to groups spatially at a higher level. For example, how its broken up in the actual atlas migh be best; north inside/outside and south inside/outside. I may also be worth considering adding an exposure factor too. This may help explain things. However, exposure is going to be confounded with habitat type. 
+
+```{r map}
+pal <- colorFactor(c("black", "green", "chocolate4", "orange", "blue"), domain = c("Bedrock", "Eelgrass", "Kelp", "Sand-Gravel", "Surfgrass"))
+
+leaflet() %>% 
+  addProviderTiles("OpenStreetMap") %>% 
+  addMouseCoordinates() %>% 
+  addCircleMarkers(data = noaa[noaa$Region == "southeastern Alaska",], ~Long1, ~Lat1, color = ~Location, fillOpacity = 1, stroke = FALSE, radius = 5, label = ~Location) 
+```
+
+It appears tht yes, the data should be spatially grouped. Proposed groups are how its broken up in the actual atlas migh be best; north inside/outside and south inside/outside. Yes there are seines in Yakutat but there is not replication of all habitat types.
+
+```{r new region define}
+## Make Polygons ##
+# North - Outside #
+NO.x <- c(-137.09838, -136.06567, -135.96680, -135.69214, -135.03296, -135.04395, -135.76904, -137.30713)
+NO.y <- c(58.41898, 58.39020, 57.82136, 57.43312, 57.14816, 56.87900, 56.63811, 58.25173)
+
+NO <- cbind(NO.x, NO.y)
+NO.s = Polygon(NO)
+NO.sp = Polygons(list(NO.s),1)
+NO.sp = SpatialPolygons(list(NO.sp))
 ```
 
