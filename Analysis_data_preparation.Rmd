@@ -1,0 +1,117 @@
+---
+title: "Analysis_data_preparation"
+author: "Wendel Raymond"
+date: "September 25, 2018"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data preparation
+Before model building the NOAA fish atlas data will need to be prepared. This includes the following steps.
+
+1. Subsetting master data for southeast Alaska
+    + Rename habitat types so they are consistent
+2. Remove invertebrates
+3. Assign lengths to unmeasured fish
+4. Convert lengths to mass
+
+## Data import
+Import master data. Data were exported from a query of the master database from NOAA. 
+
+```{r data}
+dat <- read.csv("Data/NOAA_All_Data_24092018.csv", header = TRUE, stringsAsFactors = FALSE)
+```
+
+```{r libraries}
+library(dplyr)
+```
+
+## Subsetting and cleanin master data
+Southeast Alaska only, habitat name changes for accuracy.
+
+```{r subsetting and cleaning}
+## Rename ##
+dat$Habitat <- as.factor(dat$Habitat)
+levels(dat$Habitat)[levels(dat$Habitat)=="Sand-gravel"] <- "Sand-Gravel"
+levels(dat$Habitat)[levels(dat$Habitat)=="Eelgrass"] <- "Seagrass"
+
+## Subset ##
+dat.se <- dat %>% 
+  filter(Region == "southeastern Alaska") %>% # SE Alaska only
+  filter(Habitat != "Surfgrass") %>% # remove stange surfgrass site
+  filter(Locale != "Yakutat Bay" & Locale != "Situk Estuary")
+```
+
+## Removing invertebrate
+Lots of species that were recorded are not fish, and we are not interested in them for this analysis.
+
+```{r remove inverts}
+## Species names ##
+sort(unique(dat.se$SpCode))
+
+## New column that assigns Taxa ##
+dat.se$Taxon <- ifelse(dat.se$SpCode == "AMPHIPOD" | dat.se$SpCode == "BSNAILSA"| dat.se$SpCode == "BSNAILW"| dat.se$SpCode == "CRABRR", dat.se$SpCode == "CRABWIDE", dat.se$SpCode =="CRABCKE", dat.se$SpCode == "CRABDEC", dat.se$SpCode == "CRABDUN", dat.se$SpCode == "CRABGD"| dat.se$SpCode == "CRABGH"| dat.se$SpCode == "CRABGKE"| dat.se$SpCode == "CRABGRA"| dat.se$SpCode == "CRABHEL" | dat.se$SpCode == "CRABHER"| dat.se$SpCode ==  "CRABLYR"| dat.se$SpCode == "CRABNKE"| dat.se$SpCode == "CRABPRH"| dat.se$SpCode == "DORIDCL"| dat.se$SpCode == "ISOPODC"| dat.se$SpCode == "ISOPODU"| dat.se$SpCode == "JLYCLNG"| dat.se$SpCode == "JLYCOMB"| dat.se$SpCode == "JLYICE"| dat.se$SpCode == "JLYLION"| dat.se$SpCode == "JLYMOON"| dat.se$SpCode == "MUSSELB")
+```
+
+
+## Assigning lengths to unmeasured fish
+Since only the first 50 fish of a given species in a given set were measured and the rest counted, the counted fish need to be assigned lengths based off the lenght-frequency of the measured fish. Note that the below code was adapted from code developed for the APECS beach seine data.
+
+### Separate measured and unmeasured fish
+The first step is to separate the measured fish from the unmeasured fish.
+```{r measured - unmeasured split}
+dat.se.m <- dat.se %>%
+  filter(taxon == "Vertebrata") %>%
+  filter(fork_length > 0)
+
+dat.se.um <- dat.se %>%
+  filter(taxon == "Vertebrata") %>% 
+  filter(unmeasured != "estimate") %>% # assume that infield estimates are accurate
+  filter(unmeasured > 0)
+
+dat.se.um$unmeasured <- as.numeric(dat.se.um$unmeasured)
+```
+
+## Assign lengths to unmeasured fish
+When beach seining we only measured the first 30 individuals of a species, and counted the rest. We can use the measured fishes to create a distribution from which we can assign lengths to the unmeasured fishes.
+
+Assign lengths to unmeasured fish based on sampled distribution. This assignment should happen at the site level. i.e. use the distribution of fishes at a site to assign unmeasured fishes at that site. There was only one seine per site and only one sine per day so site and date are essentially unique identifiers for how we want to restrict our analysis. 
+
+Option 1 will be to assume the least and jsut use the sampled proportions to assign lenghts to unmeasured fish
+```{r assignment direct}
+# Exclued fishes that do not have a measured counterpart. These were insantces when we tossed a fish without knowing what it was other than it was a sculpin thing  
+fish.um.redu <- fish.um[c(1:29, 31, 32, 34, 35, 36, 38:53, 55:60, 63:89, 91:95),]
+
+d <- data.frame()
+for(s in unique(fish.um.redu$site)){ # cycle through sites
+  dat.m <- fish.m %>% # subset measured data
+    filter(site == s)
+  dat.um <- fish.um.redu %>% #subset unmeasured data
+      filter(site == s)
+  for(i in unique(dat.um$sp_code)){ #cycle through species that are in UNMEASURED data
+    samp <- dat.m %>% # create sample from which to make distrubution
+      filter(sp_code == i)
+    unmeas <- dat.um %>% # isolate unmeasured fish
+      filter(sp_code == i)
+    unmeas <- as.numeric(unmeas$unmeasured) # save unmeasured value
+    dat <- data.frame(size = as.character(samp$fork_length))
+    dat2 <- dat %>% 
+      group_by(size) %>% 
+      summarise(count = n())
+    dat2$porb <- (dat2$count/sum(dat2$count))
+    dat2$x <- as.numeric(paste(dat2$size))
+    fx <- function(n){ # function derived from limits and probabilities of above
+    sample(x = min(dat2$x):max(dat2$x), n, replace = TRUE, prob = dat2$prob)
+    }
+    dat3 <- data.frame(site = s, sp_code = i, fork_length = fx(unmeas))
+    d <- rbind(d, dat3)
+  }
+} # this is returning an error in regards to prob, but i am not sure what its talking about
+```
+
+
