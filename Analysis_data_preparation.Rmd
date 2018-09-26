@@ -29,6 +29,7 @@ dat <- read.csv("Data/NOAA_All_Data_24092018.csv", header = TRUE, stringsAsFacto
 
 ```{r libraries}
 library(dplyr)
+library(data.table)
 ```
 
 ## Subsetting and cleanin master data
@@ -47,71 +48,102 @@ dat.se <- dat %>%
   filter(Locale != "Yakutat Bay" & Locale != "Situk Estuary")
 ```
 
-## Removing invertebrate
+## Defining invertebrates
 Lots of species that were recorded are not fish, and we are not interested in them for this analysis.
 
-```{r remove inverts}
+```{r define inverts}
 ## Species names ##
 sort(unique(dat.se$SpCode))
 
 ## New column that assigns Taxa ##
-dat.se$Taxon <- ifelse(dat.se$SpCode == "AMPHIPOD" | dat.se$SpCode == "BSNAILSA"| dat.se$SpCode == "BSNAILW"| dat.se$SpCode == "CRABRR", dat.se$SpCode == "CRABWIDE", dat.se$SpCode =="CRABCKE", dat.se$SpCode == "CRABDEC", dat.se$SpCode == "CRABDUN", dat.se$SpCode == "CRABGD"| dat.se$SpCode == "CRABGH"| dat.se$SpCode == "CRABGKE"| dat.se$SpCode == "CRABGRA"| dat.se$SpCode == "CRABHEL" | dat.se$SpCode == "CRABHER"| dat.se$SpCode ==  "CRABLYR"| dat.se$SpCode == "CRABNKE"| dat.se$SpCode == "CRABPRH"| dat.se$SpCode == "DORIDCL"| dat.se$SpCode == "ISOPODC"| dat.se$SpCode == "ISOPODU"| dat.se$SpCode == "JLYCLNG"| dat.se$SpCode == "JLYCOMB"| dat.se$SpCode == "JLYICE"| dat.se$SpCode == "JLYLION"| dat.se$SpCode == "JLYMOON"| dat.se$SpCode == "MUSSELB")
+dat.se$Taxon <- ifelse(dat.se$SpCode == "AMPHIPOD" | dat.se$SpCode == "BSNAILSA"| dat.se$SpCode == "BSNAILW"| dat.se$SpCode == "CRABRR"| dat.se$SpCode == "CRABWIDE"| dat.se$SpCode =="CRABCKE"| dat.se$SpCode == "CRABDEC"| dat.se$SpCode == "CRABDUN"| dat.se$SpCode == "CRABGD"| dat.se$SpCode == "CRABGH"| dat.se$SpCode == "CRABGKE"| dat.se$SpCode == "CRABGRA"| dat.se$SpCode == "CRABHEL" | dat.se$SpCode == "CRABHER"| dat.se$SpCode ==  "CRABLYR"| dat.se$SpCode == "CRABNKE"| dat.se$SpCode == "CRABPRH"| dat.se$SpCode == "DORIDCL"| dat.se$SpCode == "ISOPODC"| dat.se$SpCode == "ISOPODU"| dat.se$SpCode == "JLYCLNG"| dat.se$SpCode == "JLYCOMB"| dat.se$SpCode == "JLYICE"| dat.se$SpCode == "JLYLION"| dat.se$SpCode == "JLYMOON"| dat.se$SpCode == "MUSSELB"| dat.se$SpCode == "MYSID"| dat.se$SpCode == "MYSIDOP"| dat.se$SpCode == "none"| dat.se$SpCode == "NUDHOOD"| dat.se$SpCode == "NUDOPAL"| dat.se$SpCode ==  "NUDRM"| dat.se$SpCode == "OCTOPUS"| dat.se$SpCode == "POLYCHT"| dat.se$SpCode == "SHRMBLD"| dat.se$SpCode ==  "SHRMCOO"| dat.se$SpCode ==  "SHRMCR"| dat.se$SpCode ==   "SHRMDB"| dat.se$SpCode ==   "SHRMDOC"| dat.se$SpCode ==  "SHRMGRA"| dat.se$SpCode ==  "SHRMHEP"| dat.se$SpCode ==  "SHRMHIP"| dat.se$SpCode ==  "SHRMNC"| dat.se$SpCode == "SHRMROU"| dat.se$SpCode ==  "SHRMSID"| dat.se$SpCode ==  "SHRMSK"| dat.se$SpCode ==  "SHRMSPO"| dat.se$SpCode ==  "SHRMSTC"| dat.se$SpCode ==  "SHRMSTI"| dat.se$SpCode ==  "SHRMSTP"| dat.se$SpCode ==  "SHRMTAN"| dat.se$SpCode == "SNAILBB"| dat.se$SpCode == "SNAILBT"| dat.se$SpCode == "SNAILFO"| dat.se$SpCode == "SNAILLH"| dat.se$SpCode ==  "SNAILLV"| dat.se$SpCode ==  "SNAILMM"| dat.se$SpCode ==  "SNAILMP"| dat.se$SpCode ==  "SNAILRT"| dat.se$SpCode == "STAR6ARM"| dat.se$SpCode == "STARLEA"| dat.se$SpCode == "STARMOT"| dat.se$SpCode == "STARPYCN" | dat.se$SpCode == "TUNICAT"| dat.se$SpCode == "UNCLAM"| dat.se$SpCode == "UNISOPOD"| dat.se$SpCode == "UNJLY"| dat.se$SpCode == "UNKRILL"| dat.se$SpCode == "UNMYSID"| dat.se$SpCode == "UNNUD"| dat.se$SpCode == "UNSHRM"| dat.se$SpCode == "UNSNAIL"| dat.se$SpCode == "UNWRM" | dat.se$SpCode == "UNCHGRN"| dat.se$SpCode == "URCHIN"| dat.se$SpCode == "WRMSCA", "INVERT", "VERT")
 ```
 
+Now that inters are defined they can be filtered out of the data
+```{r remove inverts}
+dat.se <- dat.se %>% 
+  filter(Taxon == "VERT")
+```
+
+## Select gear type
+A few different seine types were used in the project. We only want data from the 37m variable mesh beach seine. The is designated at BSEINE in the Gear column
+```{r gear type}
+dat.se <- dat.se %>%
+  filter(Gear == "BSEINE")
+```
 
 ## Assigning lengths to unmeasured fish
 Since only the first 50 fish of a given species in a given set were measured and the rest counted, the counted fish need to be assigned lengths based off the lenght-frequency of the measured fish. Note that the below code was adapted from code developed for the APECS beach seine data.
 
 ### Separate measured and unmeasured fish
-The first step is to separate the measured fish from the unmeasured fish.
+The first step is to separate the measured fish from the unmeasured fish. Note that this removes a TUBEPOA that had neigher a ForLength or an Unmeasured count.
 ```{r measured - unmeasured split}
+## Measured ##
 dat.se.m <- dat.se %>%
-  filter(taxon == "Vertebrata") %>%
-  filter(fork_length > 0)
+  filter(ForkLength > 0)
 
+## Unmeasured ##
 dat.se.um <- dat.se %>%
-  filter(taxon == "Vertebrata") %>% 
-  filter(unmeasured != "estimate") %>% # assume that infield estimates are accurate
-  filter(unmeasured > 0)
-
-dat.se.um$unmeasured <- as.numeric(dat.se.um$unmeasured)
+  filter(Unmeasured > 0)
+  
+dat.se.um$Unmeasured <- as.numeric(dat.se.um$Unmeasured)
 ```
 
 ## Assign lengths to unmeasured fish
-When beach seining we only measured the first 30 individuals of a species, and counted the rest. We can use the measured fishes to create a distribution from which we can assign lengths to the unmeasured fishes.
+When beach seining we only measured the first 50 individuals of a species, and counted the rest. We can use the measured fishes to create a distribution from which we can assign lengths to the unmeasured fishes.
 
-Assign lengths to unmeasured fish based on sampled distribution. This assignment should happen at the site level. i.e. use the distribution of fishes at a site to assign unmeasured fishes at that site. There was only one seine per site and only one sine per day so site and date are essentially unique identifiers for how we want to restrict our analysis. 
+Assign lengths to unmeasured fish based on sampled distribution. This assignment should happen at the EventID level. i.e. use the distribution of fishes at a EventID to assign unmeasured fishes at that EventID. 
 
-Option 1 will be to assume the least and jsut use the sampled proportions to assign lenghts to unmeasured fish
+First we need to filter out data were a fish was counted but there is no corresponding measurment
+```{r remove no measures}
+d <- data.frame() # empty dataframe to fill with for loop
+
+for(e in unique(dat.se.um$EventID)){ # cycle through uniqie EventIDs
+  dat.m <- dat.se.m %>% # subset measured data by interation EventID
+    filter(EventID == e)
+  dat.um <- dat.se.um %>% # subset unmeasured data by iteration EventID
+      filter(EventID == e)
+  dat.um.new <- dat.um[dat.um$SpCode %in% dat.m$SpCode, ]
+  d <- rbind(d, dat.um.new)
+}
+```
+
+
+We will assume the least and just use the sampled proportions to assign lenghts to unmeasured fish. Here, instead of using the raw uneasured data frame I will use the subset data frame made from the loop above that removed instances where an unmeasured fish did not have a measured counterparts.  
 ```{r assignment direct}
-# Exclued fishes that do not have a measured counterpart. These were insantces when we tossed a fish without knowing what it was other than it was a sculpin thing  
-fish.um.redu <- fish.um[c(1:29, 31, 32, 34, 35, 36, 38:53, 55:60, 63:89, 91:95),]
+q <- data.frame() # empty dataframe to fill with for loop
 
-d <- data.frame()
-for(s in unique(fish.um.redu$site)){ # cycle through sites
-  dat.m <- fish.m %>% # subset measured data
-    filter(site == s)
-  dat.um <- fish.um.redu %>% #subset unmeasured data
-      filter(site == s)
-  for(i in unique(dat.um$sp_code)){ #cycle through species that are in UNMEASURED data
+for(e in unique(dat.se.um$EventID)){ # cycle through uniqie EventIDs
+  dat.m <- dat.se.m %>% # subset measured data by interation EventID
+    filter(EventID == e)
+  dat.um <- d %>% # subset unmeasured data by iteration EventID
+      filter(EventID == e)
+  for(i in unique(dat.um$SpCode)){ # cycle through species that are in UNMEASURED data
     samp <- dat.m %>% # create sample from which to make distrubution
-      filter(sp_code == i)
+      filter(SpCode == i)
     unmeas <- dat.um %>% # isolate unmeasured fish
-      filter(sp_code == i)
-    unmeas <- as.numeric(unmeas$unmeasured) # save unmeasured value
-    dat <- data.frame(size = as.character(samp$fork_length))
-    dat2 <- dat %>% 
+      filter(SpCode == i)
+    unmeas <- as.numeric(unmeas$Unmeasured) # save unmeasured value
+    dat.temp1 <- data.frame(size = as.character(samp$ForkLength))
+    dat.temp2 <- dat.temp1 %>% 
       group_by(size) %>% 
       summarise(count = n())
-    dat2$porb <- (dat2$count/sum(dat2$count))
-    dat2$x <- as.numeric(paste(dat2$size))
+    dat.temp2$porb <- (dat.temp2$count/sum(dat.temp2$count))
+    dat.temp2$x <- as.numeric(paste(dat.temp2$size))
     fx <- function(n){ # function derived from limits and probabilities of above
-    sample(x = min(dat2$x):max(dat2$x), n, replace = TRUE, prob = dat2$prob)
+    sample(x = min(dat.temp2$x):max(dat.temp2$x), n, replace = TRUE, prob = dat.temp2$prob)
     }
-    dat3 <- data.frame(site = s, sp_code = i, fork_length = fx(unmeas))
-    d <- rbind(d, dat3)
+    dat.temp3 <- data.frame(EventID = e, SpCode = i, ForkLength = fx(unmeas))
+    q <- rbind(q, dat.temp3) # append iteration to full data
   }
 } # this is returning an error in regards to prob, but i am not sure what its talking about
 ```
 
+Append assigned lengths to master data with all site level data
+```{r append assigned lengths}
+## Merge with original measured fishes ##
+q <- as.data.table(q)
+dat.se.m <- as.data.table(dat.se.m)
 
+system.time(dat.se.all <- merge(dat.se.m, q, by = c("EventID", "SpCode")))
+```
