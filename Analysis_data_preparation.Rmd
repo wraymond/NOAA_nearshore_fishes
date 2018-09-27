@@ -108,10 +108,10 @@ for(e in unique(dat.se.um$EventID)){ # cycle through uniqie EventIDs
 }
 ```
 
-
 We will assume the least and just use the sampled proportions to assign lenghts to unmeasured fish. Here, instead of using the raw uneasured data frame I will use the subset data frame made from the loop above that removed instances where an unmeasured fish did not have a measured counterparts.  
 ```{r assignment direct}
 q <- data.frame() # empty dataframe to fill with for loop
+
 
 for(e in unique(dat.se.um$EventID)){ # cycle through uniqie EventIDs
   dat.m <- dat.se.m %>% # subset measured data by interation EventID
