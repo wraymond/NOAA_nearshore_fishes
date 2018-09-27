@@ -25,6 +25,7 @@ Import master data. Data were exported from a query of the master database from 
 
 ```{r data}
 dat <- read.csv("Data/NOAA_All_Data_24092018.csv", header = TRUE, stringsAsFactors = FALSE)
+lw <- read.csv("Data/SEAK_fish_tax_LW.csv", header = TRUE, stringsAsFactors = FALSE)
 ```
 
 ```{r libraries}
@@ -142,8 +143,53 @@ for(e in unique(dat.se.um$EventID)){ # cycle through uniqie EventIDs
 Append assigned lengths to master data with all site level data
 ```{r append assigned lengths}
 ## Merge with original measured fishes ##
-q <- as.data.table(q)
-dat.se.m <- as.data.table(dat.se.m)
+## Extract site and sp data ##
+fish.site <- unique(dat.se[,1:31])
 
-system.time(dat.se.all <- merge(dat.se.m, q, by = c("EventID", "SpCode")))
+## Merge with loop output, the lengths of unmeasured fishes ##
+d.info <- merge(q, fish.site, by = "EventID")
+
+## Merge with original measured fishes ##
+fish.all <- bind_rows(dat.se.m, d.info)
 ```
+
+## Append Taxonomy
+To help with later data analysis we will append family and order information so grouping by higher taxonomic values can be done.
+
+```{r tax}
+## Append Taxonomy ##
+fish.all <- merge(fish.all, lw[, 1:5], by = "SpCode")
+```
+
+
+## Calculate Biomass
+Using the length-weight conversion values individual lengths will be converted to biomass. Coefficients are in cm*g so fork lengths will need to be converted to cm from mm. Also 
+
+```{r calc mass}
+## Unique species in master data ##
+sp <- data.frame(SpCode = unique(fish.all$SpCode))
+
+## Species that need stand ins ##
+nomatch <- anti_join(sp, lw, by = "SpCode")
+
+## Species that don't have a or b balues ##
+nodat <- subset(lw, is.na(lw$a)) 
+nodat$SpCommon
+
+# Calculate mean a and b values by Family #
+fams <- lw %>% 
+  group_by(Family) %>% 
+  summarise(n = n(),
+            mean_a = mean(a, na.rm = TRUE),
+            mean_b = mean(b, na.rm = TRUE))
+
+## Calculate mean a and b values by Species with appended Family ##
+sps <- lw %>% 
+ group_by(SpCode) %>%
+ summarise(Family = unique(Family),
+           n = n(),
+           mean_a = mean(a, na.rm = TRUE),
+           mean_b = mean(b, na.rm = TRUE)) 
+```
+
+
