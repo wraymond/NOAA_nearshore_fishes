@@ -18,7 +18,9 @@ Before model building the NOAA fish atlas data will need to be prepared. This in
     + Rename habitat types so they are consistent
 2. Remove invertebrates
 3. Assign lengths to unmeasured fish
-4. Convert lengths to mass
+4. Append full taxonomy
+5. Convert lengths to mass
+6. Export new data for analysis script
 
 ## Data import
 Import master data. Data were exported from a query of the master database from NOAA. 
@@ -163,9 +165,10 @@ fish.all <- merge(fish.all, lw[, 1:5], by = "SpCode")
 
 
 ## Calculate Biomass
-Using the length-weight conversion values individual lengths will be converted to biomass. Coefficients are in cm*g so fork lengths will need to be converted to cm from mm. Also 
+Using the length-weight conversion values individual lengths will be converted to biomass. Coefficients are in cm*g so fork lengths will need to be converted to cm from mm.
 
-```{r calc mass}
+First we need to do some prep work to account for fish that do not have specific a and b values.
+```{r calc prep}
 ## Unique species in master data ##
 sp <- data.frame(SpCode = unique(fish.all$SpCode))
 
@@ -192,4 +195,31 @@ sps <- lw %>%
            mean_b = mean(b, na.rm = TRUE)) 
 ```
 
+Now we can calculate mass with appropriate a nad b values. First priority will go to average values of that Species, then average valeus for that Family. Then we can calculate mass of each fish
+
+```{r calc mass}
+## Append a and b ##
+fish.all$a <- sps$mean_a[match(fish.all$SpCode, sps$SpCode)]
+fish.all$b <- sps$mean_b[match(fish.all$SpCode, sps$SpCode)]
+
+ifelse(is.nan(fish.all$a), fish.all$a <- fams$mean_a[match(fish.all$Family, fams$Family)], "")
+ifelse(is.nan(fish.all$b), fish.all$b <- fams$mean_b[match(fish.all$Family, fams$Family)], "")
+
+## Calculate mass per fish ##
+fish.all$ForkLength_cm <- fish.all$ForkLength / 10 # Conver mm to cm
+fish.all$mass_g <- (fish.all$a * fish.all$ForkLength_cm^fish.all$b)
+```
+
+## Export
+The file is pretty massive so we will pare it down.
+```{r reduce}
+names(fish.all)
+
+fish <- cbind(fish.all[,c(2:6, 13, 16, 17, 21, 23, 26, 27, 1, 37:40, 34, 44)])
+```
+
+
+```{r export}
+write.csv(fish, "Data/NOAA_All_Data_allL_mass.csv", row.names = FALSE)
+```
 
