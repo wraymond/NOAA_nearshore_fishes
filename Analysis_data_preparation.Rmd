@@ -210,14 +210,34 @@ fish.all$ForkLength_cm <- fish.all$ForkLength / 10 # Conver mm to cm
 fish.all$mass_g <- (fish.all$a * fish.all$ForkLength_cm^fish.all$b)
 ```
 
-## Export
-The file is pretty massive so we will pare it down.
-```{r reduce}
+## Group by EventID
+So since we are going to analyze these data in a multivariate way averything will get pooled at the site level. First we will sum all fish mass by species (SpCode) by EventID. Then that will be appended to site level data.
+```{r group}
 names(fish.all)
 
-fish <- cbind(fish.all[,c(2:6, 13, 16, 17, 21, 23, 26, 27, 1, 37:40, 34, 44)])
+fish.event <- fish.all %>% 
+  group_by(EventID, SpCode) %>% 
+  summarise(date = unique(Date),
+            gradient = unique(Gradient),
+            exposure = unique(Exposure),
+            region = unique(Region),
+            locale = unique(Locale),
+            location = unique(Location),
+            sub_locale = unique(SubLocale),
+            habitat = unique(Habitat),
+            lat = unique(Lat1),
+            long = unique(Long1),
+            season = unique(Season),
+            month = unique(Mon),
+            year = unique(Year),
+            temp_c = unique(Temp),
+            sal_ppt = unique(Salinity),
+            mass_g = sum(mass_g))
+
 ```
 
+
+## Export
 
 ```{r export}
 write.csv(fish, "Data/NOAA_All_Data_allL_mass.csv", row.names = FALSE)
