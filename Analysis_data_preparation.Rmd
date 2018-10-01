@@ -215,6 +215,7 @@ So since we are going to analyze these data in a multivariate way averything wil
 ```{r group}
 names(fish.all)
 
+## Caclualte Sums ##
 fish.event <- fish.all %>% 
   group_by(EventID, SpCode) %>% 
   summarise(date = unique(Date),
@@ -234,12 +235,14 @@ fish.event <- fish.all %>%
             sal_ppt = unique(Salinity),
             mass_g = sum(mass_g))
 
+## Merge some Taxonomic data ##
+fish.event <- merge(fish.event, lw[,1:5], by = "SpCode")
 ```
 
 
 ## Export
 
 ```{r export}
-write.csv(fish, "Data/NOAA_All_Data_allL_mass.csv", row.names = FALSE)
+write.csv(fish.event, "Data/SEAK_EventID_mass.csv", row.names = FALSE)
 ```
 
