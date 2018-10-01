@@ -1,0 +1,39 @@
+---
+title: "Analysis_model_building"
+author: "Wendel Raymond"
+date: "October 1, 2018"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Model building
+Using the data prepared from the data preparation script we can now beging model building. Before we can run a PERMANOVA we will need to prep the response and explanatory data. After that we will generate a global model and eventually best model, testing the effect of habitat on fish community composition.
+
+```{r data}
+dat <- read.csv("Data/SEAK_EventID_mass.csv", header = TRUE, stringsAsFactors = TRUE)
+```
+
+```{r libraries}
+library(dplyr)
+library(tidyr)
+library(vegan)
+```
+
+## Prepping response and explanatory data
+For ease of processing later we will separate the response data (species and mass) from the explanatory data (EventID, date, month, temp, salinity, etc.)
+
+```{r separating}
+names(dat)
+site <- unique(dat[, 2:17])
+duplicated(site$EventID)
+
+fish <- dat[, c(1, 2, 18)]
+duplicated(fish)
+fish <- spread(fish, SpCode, mass_g)
+```
+
