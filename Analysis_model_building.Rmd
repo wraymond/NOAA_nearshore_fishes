@@ -28,12 +28,39 @@ library(vegan)
 For ease of processing later we will separate the response data (species and mass) from the explanatory data (EventID, date, month, temp, salinity, etc.)
 
 ```{r separating}
+## Site data ##
 names(dat)
 site <- unique(dat[, 2:17])
 duplicated(site$EventID)
 
+## Fish data ##
 fish <- dat[, c(1, 2, 18)]
 duplicated(fish)
 fish <- spread(fish, SpCode, mass_g)
+fish[is.na(fish)] <- 0
+colSums(fish) # UNLARV has no data whatsoever
+fish <- fish[, c(1:84, 86:97)]
+```
+
+## Standarizations and Transformations
+The data are very noisy, cover a huge range of values, and contain many zeros. I will standardize the data to species maximum and the to total catch of that EventID. That way catch will be realative to total for that species but also relative to other EventIDs.
+
+```{r standardization}
+## To species maximum ##
+fish.std <- scale(fish[,2:96], center = FALSE, scale = apply(fish[,2:96], 2, max))
+
+## To EventID total ##
+fish.std <- fish.std/rowSums(fish[,2:96])
+```
+
+## Dissimilarity
+Calculate dissimilarity matrix in preparation for PERMANOVA
+```{r dissim}
+dist.bray <- vegdist(fish.std, method = "bray")
+```
+
+## Model - PERMANOVA
+```{r perm}
+mod1 <- adonis2(dist.bray ~ habitat)
 ```
 
