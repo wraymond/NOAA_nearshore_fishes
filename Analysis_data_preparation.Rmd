@@ -236,7 +236,8 @@ fish.event <- fish.all %>%
             mass_g = sum(mass_g))
 
 ## Merge some Taxonomic data ##
-fish.event <- merge(fish.event, lw[,1:5], by = "SpCode")
+lw.redu <- unique(lw[,1:5])
+fish.event <- merge(fish.event, lw.redu, by = "SpCode")
 ```
 
 
