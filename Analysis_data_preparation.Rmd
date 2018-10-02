@@ -25,14 +25,25 @@ Before model building the NOAA fish atlas data will need to be prepared. This in
 ## Data import
 Import master data. Data were exported from a query of the master database from NOAA. 
 
-```{r data}
-dat <- read.csv("Data/NOAA_All_Data_24092018.csv", header = TRUE, stringsAsFactors = FALSE)
-lw <- read.csv("Data/SEAK_fish_tax_LW.csv", header = TRUE, stringsAsFactors = FALSE)
-```
-
 ```{r libraries}
 library(dplyr)
 library(data.table)
+library(rgdal)
+library(sp)
+library(spatialEco)
+```
+
+```{r data}
+## Regular ##
+dat <- read.csv("Data/NOAA_All_Data_24092018.csv", header = TRUE, stringsAsFactors = FALSE)
+lw <- read.csv("Data/SEAK_fish_tax_LW.csv", header = TRUE, stringsAsFactors = FALSE)
+
+## Spatial ##
+seines <- readOGR(dsn="E:/wraymond2/My Documents/Graduate School/GIS General", layer="NOAA_SEAK_seines")
+NO_SEAK <- readOGR(dsn="E:/wraymond2/My Documents/Graduate School/GIS General", layer="NO_SEAK")
+NI_SEAK <- readOGR(dsn="E:/wraymond2/My Documents/Graduate School/GIS General", layer="NI_SEAK")
+SO_SEAK <- readOGR(dsn="E:/wraymond2/My Documents/Graduate School/GIS General", layer="SO_SEAK")
+SI_SEAK <- readOGR(dsn="E:/wraymond2/My Documents/Graduate School/GIS General", layer="SI_SEAK")
 ```
 
 ## Subsetting and cleanin master data
@@ -238,6 +249,21 @@ fish.event <- fish.all %>%
 ## Merge some Taxonomic data ##
 lw.redu <- unique(lw[,1:5])
 fish.event <- merge(fish.event, lw.redu, by = "SpCode")
+```
+
+
+## Assign spatial information
+We will use the spatial information in the data to assign regions to each seine (EventID)
+```{r}
+event <- unique(fish.event)
+write.csv(event, "Data/NOAA_SEAK_EventID.csv", row.names = FALSE)
+```
+
+
+```{r region assign}
+test <- point.in.poly(seines, NO_SEAK)
+
+test.dat <- test@data
 ```
 
 
