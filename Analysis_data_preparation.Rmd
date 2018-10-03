@@ -39,11 +39,10 @@ dat <- read.csv("Data/NOAA_All_Data_24092018.csv", header = TRUE, stringsAsFacto
 lw <- read.csv("Data/SEAK_fish_tax_LW.csv", header = TRUE, stringsAsFactors = FALSE)
 
 ## Spatial ##
-seines <- readOGR(dsn="E:/wraymond2/My Documents/Graduate School/GIS General", layer="NOAA_SEAK_seines")
-NO_SEAK <- readOGR(dsn="E:/wraymond2/My Documents/Graduate School/GIS General", layer="NO_SEAK")
-NI_SEAK <- readOGR(dsn="E:/wraymond2/My Documents/Graduate School/GIS General", layer="NI_SEAK")
-SO_SEAK <- readOGR(dsn="E:/wraymond2/My Documents/Graduate School/GIS General", layer="SO_SEAK")
-SI_SEAK <- readOGR(dsn="E:/wraymond2/My Documents/Graduate School/GIS General", layer="SI_SEAK")
+NO_SEAK <- readOGR(dsn="Data", layer="NO_SEAK")
+NI_SEAK <- readOGR(dsn="Data", layer="NI_SEAK")
+SO_SEAK <- readOGR(dsn="Data", layer="SO_SEAK")
+SI_SEAK <- readOGR(dsn="Data", layer="SI_SEAK")
 ```
 
 ## Subsetting and cleanin master data
@@ -255,13 +254,18 @@ fish.event <- merge(fish.event, lw.redu, by = "SpCode")
 ## Assign spatial information
 We will use the spatial information in the data to assign regions to each seine (EventID)
 ```{r}
-event <- unique(fish.event)
+event <- unique(fish.event[, c(2, 11, 12)])
 write.csv(event, "Data/NOAA_SEAK_EventID.csv", row.names = FALSE)
+
+xy <- event[, c(2,3)]
+event.sp <- SpatialPointsDataFrame(coords = xy, data = event, proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+
+event.sp <- spTransform(event.sp, CRS = "+proj=utm +zone=8 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
 ```
 
 
 ```{r region assign}
-test <- point.in.poly(seines, NO_SEAK)
+test <- point.in.poly(event.sp, NO_SEAK)
 
 test.dat <- test@data
 ```
