@@ -1,2 +1,2 @@
-# NOAA_nearshore_fishes
-Analyses on NOAA nearshore fish atlas for Data Wrangling seminar with Franz Fall 2018 
+# Analysis of NOAA nearshore fish database
+This reposotory will house analyses on NOAA nearshore fish atlas for Data Wrangling seminar with Franz Fall 2018. Data are publically [avialable](https://www.fisheries.noaa.gov/alaska/habitat-conservation/nearshore-fish-atlas-alaska). The goal of these analyses are to test if habitat type plays a role in nearshore fish communities in southeast Alaska. Files in this repo are the data ('Data' folder) and various Rmd scripts that perfrom differnce data cleaning, preparing, and analysis tasks.  
