@@ -22,6 +22,7 @@ dat <- read.csv("Data/SEAK_EventID_mass.csv", header = TRUE, stringsAsFactors = 
 library(dplyr)
 library(tidyr)
 library(vegan)
+library(ggplot2)
 ```
 
 ## Prepping response and explanatory data
@@ -42,22 +43,77 @@ colSums(fish) # UNLARV has no data whatsoever
 fish <- fish[, c(1:84, 86:97)]
 ```
 
-## Standarizations and Transformations
-The data are very noisy, cover a huge range of values, and contain many zeros. I will standardize the data to species maximum and the to total catch of that EventID. That way catch will be realative to total for that species but also relative to other EventIDs.
+## Transformations and Standarizations 
+The data are very noisy, cover a huge range of values, and contain many zeros. I will standardize the data to species maximum and the to total catch of that EventID. That way catch will be realative to total for that species but also relative to other EventIDs. I will also remove species that occur in 1% or less of all seines. 
+
+### Remove rare species
+For this filtering I will remove species that *occur* in less that 1% of seines. This will be done by converining mass to presence/absence and calculating relative fequency of occurance across all seines. 
+```{r remove rare}
+## Covnert to P/A ##
+fish.pa <- ifelse(fish[,2:96] > 0, 1, 0)
+fish.pa <- data.frame(cbind(EventID = fish$EventID), fish.pa)
+
+## Calculate species totals ##
+sp.total <- colSums(fish.pa[,2:96])
+
+## Calculate freq of occurance ##
+sp.fq <- (sp.total/nrow(fish)) * 100
+
+## Rare species ##
+rare.sp <- ifelse(sp.fq < 1, names(sp.fq), NA)
+rare.sp <- rare.sp[!is.na(rare.sp)]
+
+## Filter out rare speces ##
+fish <- fish[, -which(names(fish) %in% names(rare.sp))]
+
+## Remove event where no common fish were caught ##
+fish <- filter(fish, EventID != 782)
+```
+
+### Reality Check
+Lets make sure that the values make sense
+```{r}
+## EventID sums ##
+event.sum <- data.frame(EventID = fish$EventID,
+                        Sum = rowSums(fish[, 2:65]))
+## So Event ID 38 has a TON on pollock
+site[site$EventID == 38,]
+fish[fish$EventID == 38,]
+
+```
+
+
+### Transformations
+This step could be considered optional, however, when looking at the data there are quite a few species with long right tail distributions. I will use a 4th root transformation as is recommended from the source data and this type of data in general. 
+```{r transformations}
+fish.trsfm <- fish^0.25
+```
+
+### Standarization
+I will use a double standardization to 
+1. standardize to species maximum
+2. then standarize to total mass
 
 ```{r standardization}
 ## To species maximum ##
-fish.std <- scale(fish[,2:96], center = FALSE, scale = apply(fish[,2:96], 2, max))
+fish.std <- scale(fish.trsfm[,2:65], center = FALSE, scale = apply(fish.trsfm[,2:65], 2, max))
 
 ## To EventID total ##
-fish.std <- fish.std/rowSums(fish[,2:96])
+fish.std <- fish.std/rowSums(fish.trsfm[, 2:65])
 ```
 
 ## Dissimilarity
-Calculate dissimilarity matrix in preparation for PERMANOVA
+Calculate dissimilarity matrix in preparation for PERMANOVA. I will use bray-curtis method as is recommended for non-multivariate normal data
 ```{r dissim}
 dist.bray <- vegdist(fish.std, method = "bray")
+mds <- metaMDS(dist.bray, k = 2)
 ```
+
+### NMDS
+```{r nmds}
+plot(mds$points, asp = 1, xlab = "nMDS1", ylab = "nMDS")
+```
+
 
 ## Model - PERMANOVA
 ```{r perm}
