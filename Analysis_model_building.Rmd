@@ -72,7 +72,7 @@ fish <- filter(fish, EventID != 782)
 ```
 
 ### Removing hyper and hypo abundant Events
-First we need to calculate the total fish catch at each site and plot. I will plot raw and 4th root transformed data.
+First we need to calculate the total fish catch at each site and plot. I will plot raw and 4th root transformed data and log stransformed.
 ```{r event sums}
 ## EventID sums ##
 event.sum <- data.frame(EventID = fish$EventID,
@@ -84,19 +84,23 @@ ggplot(event.sum) +
   geom_boxplot(aes(x = EventID, y = (Sum)^0.25))
 
 ggplot(event.sum) +
+  geom_boxplot(aes(x = EventID, y = log(Sum)))
+
+ggplot(event.sum) +
   geom_histogram(aes(Sum))
 
 ggplot(event.sum) +
   geom_histogram(aes((Sum)^.25))
 
+ggplot(event.sum) +
+  geom_histogram(aes(log(Sum)))
+
 range(event.sum$Sum^0.25)
-quantile(event.sum$Sum^0.25, probs = c(0.025, 0.975))
+quantile(log(event.sum$Sum), probs = c(0.025, 0.975))
 ```
 
 I will filter out Events that with total catches outside 2 standard deviations of the average catch
 ```{r}
-quantile(event.sum$Sum, probs = c(0.025, 0.975))
-
 filt <- event.sum %>%
   filter(Sum > 11.24413 & Sum < 159838.48688)
 
@@ -105,16 +109,19 @@ fish <- subset(fish, fish$EventID %in% filt$EventID)
 
 
 ### Transformations
-This step could be considered optional, however, when looking at the data there are quite a few species with long right tail distributions. I will use a 4th root transformation as is recommended from the source data and this type of data in general. 
+This step could be considered optional, however, when looking at the data there are quite a few species with long right tail distributions. I will use a log transformation becasue the data are HIGHLY skewed. 
 ```{r transformations}
-fish.trsfm <- fish[, 2:65]^0.25
+## Transform ##
+fish.trsfm <- data.frame(log(fish[, 2:65]))
+
+## Convert Inf to Zero ##
+fish.trsfm[mapply(is.infinite, fish.trsfm)] <- 0
 ```
 
 ### Standarization
 I will use a double standardization to 
 1. standardize to species maximum
 2. then standarize to total mass
-
 ```{r standardization}
 ## To species maximum ##
 fish.std <- scale(fish.trsfm, center = FALSE, scale = apply(fish.trsfm, 2, max))
@@ -127,12 +134,24 @@ fish.std <- fish.std/rowSums(fish.trsfm)
 Calculate dissimilarity matrix in preparation for PERMANOVA. I will use bray-curtis method as is recommended for non-multivariate normal data
 ```{r dissim}
 dist.bray <- vegdist(fish.std, method = "bray")
-mds <- metaMDS(dist.bray, k = 3)
+
+## Assign row names as event ID ##
+row.names(mds$points) <- fish$EventID
 ```
+
+## PCA
+There are a few variablibes that are driving the dissimilarity
+```{r}
+pca <- princomp(dist.bray)
+summary(pca)
+biplot(pca, cex = 1)
+```
+
 
 ### NMDS
 ```{r nmds}
 plot(mds$points, asp = 1, xlab = "nMDS1", ylab = "nMDS")
+text(mds$points[,1], mds$points[,2],labels=row.names(mds$points),pos=3,cex=0.5) 
 ```
 
 
