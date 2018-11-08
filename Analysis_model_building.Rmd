@@ -23,10 +23,11 @@ library(dplyr)
 library(tidyr)
 library(vegan)
 library(ggplot2)
+theme_set(theme_classic())
 ```
 
 ## Prepping response and explanatory data
-For ease of processing later we will separate the response data (species and mass) from the explanatory data (EventID, date, month, temp, salinity, etc.)
+For ease of processing later we will separate the response data (species and mass) from the explanatory data (EventID, date, month, temp, salinity, etc.). I separate the site level characteristic data like habitat, temp, salinity, lat/long from the species and mass data. Then I will `spread` the mass data so that species are columns and EventIDs are rows. 
 
 ```{r separating}
 ## Site data ##
@@ -40,14 +41,14 @@ duplicated(fish)
 fish <- spread(fish, SpCode, mass_g)
 fish[is.na(fish)] <- 0
 colSums(fish) # UNLARV has no data whatsoever
-fish <- fish[, c(1:84, 86:97)]
+fish <- fish[, c(1:84, 86:97)] # removing UNLARV
 ```
 
-## Transformations and Standarizations 
-The data are very noisy, cover a huge range of values, and contain many zeros. I will standardize the data to species maximum and the to total catch of that EventID. That way catch will be realative to total for that species but also relative to other EventIDs. I will also remove species that occur in 1% or less of all seines. 
+## Data filtering
+There is a large range of data in terms of presense/absense and biomass. This large range of values that have highly skewed distributions will mess with interpretation of our multivariate response. What follows are some filtering procedures to try to control extreme values.
 
 ### Remove rare species
-For this filtering I will remove species that *occur* in less that 1% of seines. This will be done by converining mass to presence/absence and calculating relative fequency of occurance across all seines. 
+For this filtering I will remove species that occur in less that 1% of seines. These species can be thought of as exceedingly rare. This will be done by converining mass to presence/absence and calculating relative fequency of occurance across all seines. 
 ```{r remove rare}
 ## Covnert to P/A ##
 fish.pa <- ifelse(fish[,2:96] > 0, 1, 0)
@@ -70,23 +71,43 @@ fish <- fish[, -which(names(fish) %in% names(rare.sp))]
 fish <- filter(fish, EventID != 782)
 ```
 
-### Reality Check
-Lets make sure that the values make sense
-```{r}
+### Removing hyper and hypo abundant Events
+First we need to calculate the total fish catch at each site and plot. I will plot raw and 4th root transformed data.
+```{r event sums}
 ## EventID sums ##
 event.sum <- data.frame(EventID = fish$EventID,
                         Sum = rowSums(fish[, 2:65]))
-## So Event ID 38 has a TON on pollock
-site[site$EventID == 38,]
-fish[fish$EventID == 38,]
+ggplot(event.sum) +
+  geom_boxplot(aes(x = EventID, y = Sum))
 
+ggplot(event.sum) +
+  geom_boxplot(aes(x = EventID, y = (Sum)^0.25))
+
+ggplot(event.sum) +
+  geom_histogram(aes(Sum))
+
+ggplot(event.sum) +
+  geom_histogram(aes((Sum)^.25))
+
+range(event.sum$Sum^0.25)
+quantile(event.sum$Sum^0.25, probs = c(0.025, 0.975))
+```
+
+I will filter out Events that with total catches outside 2 standard deviations of the average catch
+```{r}
+quantile(event.sum$Sum, probs = c(0.025, 0.975))
+
+filt <- event.sum %>%
+  filter(Sum > 11.24413 & Sum < 159838.48688)
+
+fish <- subset(fish, fish$EventID %in% filt$EventID)
 ```
 
 
 ### Transformations
 This step could be considered optional, however, when looking at the data there are quite a few species with long right tail distributions. I will use a 4th root transformation as is recommended from the source data and this type of data in general. 
 ```{r transformations}
-fish.trsfm <- fish^0.25
+fish.trsfm <- fish[, 2:65]^0.25
 ```
 
 ### Standarization
@@ -96,17 +117,17 @@ I will use a double standardization to
 
 ```{r standardization}
 ## To species maximum ##
-fish.std <- scale(fish.trsfm[,2:65], center = FALSE, scale = apply(fish.trsfm[,2:65], 2, max))
+fish.std <- scale(fish.trsfm, center = FALSE, scale = apply(fish.trsfm, 2, max))
 
 ## To EventID total ##
-fish.std <- fish.std/rowSums(fish.trsfm[, 2:65])
+fish.std <- fish.std/rowSums(fish.trsfm)
 ```
 
 ## Dissimilarity
 Calculate dissimilarity matrix in preparation for PERMANOVA. I will use bray-curtis method as is recommended for non-multivariate normal data
 ```{r dissim}
 dist.bray <- vegdist(fish.std, method = "bray")
-mds <- metaMDS(dist.bray, k = 2)
+mds <- metaMDS(dist.bray, k = 3)
 ```
 
 ### NMDS
