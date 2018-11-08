@@ -100,6 +100,7 @@ dat.se.um <- dat.se %>%
   filter(Unmeasured > 0)
   
 dat.se.um$Unmeasured <- as.numeric(dat.se.um$Unmeasured)
+range(dat.se.um$Unmeasured)
 ```
 
 ## Assign lengths to unmeasured fish
@@ -216,7 +217,7 @@ ifelse(is.nan(fish.all$a), fish.all$a <- fams$mean_a[match(fish.all$Family, fams
 ifelse(is.nan(fish.all$b), fish.all$b <- fams$mean_b[match(fish.all$Family, fams$Family)], "")
 
 ## Calculate mass per fish ##
-fish.all$ForkLength_cm <- fish.all$ForkLength / 10 # Conver mm to cm
+fish.all$ForkLength_cm <- fish.all$ForkLength / 10 # Convert mm to cm
 fish.all$mass_g <- (fish.all$a * fish.all$ForkLength_cm^fish.all$b)
 ```
 
