@@ -26,22 +26,38 @@ library(ggplot2)
 theme_set(theme_classic())
 ```
 
+## Exploring the data
+```{r explor}
+dat.sum <- dat %>%
+  group_by(EventID, SpCode) %>% 
+  summarise(SpSum = sum(mass_g))
+  
+ggplot(dat.sum) +
+  geom_histogram(aes(SpSum)) +
+  facet_wrap(~SpCode)
+```
+
+
 ## Prepping response and explanatory data
 For ease of processing later we will separate the response data (species and mass) from the explanatory data (EventID, date, month, temp, salinity, etc.). I separate the site level characteristic data like habitat, temp, salinity, lat/long from the species and mass data. Then I will `spread` the mass data so that species are columns and EventIDs are rows. 
 
 ```{r separating}
+## Species filtering ##
+dat.filt <- dat %>% 
+  filter(SpCode != "PINKSAL" & SpCode != "CHINSAL" & SpCode != "CHUMSAL" & SpCode != "COHOSAL" & SpCode != "SOCKSAL" & SpCode != "POLLOCK" & SpCode != "PSANDL" & SpCode != "HERRING")
+
 ## Site data ##
-names(dat)
-site <- unique(dat[, 2:17])
+names(dat.filt)
+site <- unique(dat.filt[, 2:17])
 duplicated(site$EventID)
 
 ## Fish data ##
-fish <- dat[, c(1, 2, 18)]
+fish <- dat.filt[, c(1, 2, 18)]
 duplicated(fish)
 fish <- spread(fish, SpCode, mass_g)
 fish[is.na(fish)] <- 0
 colSums(fish) # UNLARV has no data whatsoever
-fish <- fish[, c(1:84, 86:97)] # removing UNLARV
+fish <- fish[, c(1:76, 78:89)] # removing UNLARV
 ```
 
 ## Data filtering
@@ -76,7 +92,9 @@ First we need to calculate the total fish catch at each site and plot. I will pl
 ```{r event sums}
 ## EventID sums ##
 event.sum <- data.frame(EventID = fish$EventID,
-                        Sum = rowSums(fish[, 2:65]))
+                        Sum = rowSums(fish[, 2:60]))
+## Plots ##
+# Box plots #
 ggplot(event.sum) +
   geom_boxplot(aes(x = EventID, y = Sum))
 
@@ -84,8 +102,9 @@ ggplot(event.sum) +
   geom_boxplot(aes(x = EventID, y = (Sum)^0.25))
 
 ggplot(event.sum) +
-  geom_boxplot(aes(x = EventID, y = log(Sum)))
+  geom_boxplot(aes(x = EventID, y = log(Sum, base = 10)))
 
+# Histograms #
 ggplot(event.sum) +
   geom_histogram(aes(Sum))
 
@@ -93,16 +112,20 @@ ggplot(event.sum) +
   geom_histogram(aes((Sum)^.25))
 
 ggplot(event.sum) +
-  geom_histogram(aes(log(Sum)))
+  geom_histogram(aes(log(Sum, base = 10)))
 
 range(event.sum$Sum^0.25)
-quantile(log(event.sum$Sum), probs = c(0.025, 0.975))
+
+quantile(log(event.sum$Sum, base = 10), probs = c(0.025, 0.975))
 ```
 
 I will filter out Events that with total catches outside 2 standard deviations of the average catch
 ```{r}
 filt <- event.sum %>%
-  filter(Sum > 11.24413 & Sum < 159838.48688)
+  filter(log(Sum, base = 10) > 0.6231138 & log(Sum, base = 10) < 4.2166507)
+
+ggplot(filt) +
+  geom_histogram(aes(log(Sum, 10)))
 
 fish <- subset(fish, fish$EventID %in% filt$EventID)
 ```
@@ -112,7 +135,7 @@ fish <- subset(fish, fish$EventID %in% filt$EventID)
 This step could be considered optional, however, when looking at the data there are quite a few species with long right tail distributions. I will use a log transformation becasue the data are HIGHLY skewed. 
 ```{r transformations}
 ## Transform ##
-fish.trsfm <- data.frame(log(fish[, 2:65]))
+fish.trsfm <- data.frame(log(fish[, 2:60], base = 10))
 
 ## Convert Inf to Zero ##
 fish.trsfm[mapply(is.infinite, fish.trsfm)] <- 0
@@ -144,12 +167,13 @@ There are a few variablibes that are driving the dissimilarity
 ```{r}
 pca <- princomp(dist.bray)
 summary(pca)
-biplot(pca, cex = 1)
+biplot(pca, cex = .5)
 ```
 
 
 ### NMDS
 ```{r nmds}
+mds <- metaMDS(dist.bray)
 plot(mds$points, asp = 1, xlab = "nMDS1", ylab = "nMDS")
 text(mds$points[,1], mds$points[,2],labels=row.names(mds$points),pos=3,cex=0.5) 
 ```
