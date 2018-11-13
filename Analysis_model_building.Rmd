@@ -48,7 +48,7 @@ dat.filt <- dat %>%
 
 ## Site data ##
 names(dat.filt)
-site <- unique(dat.filt[, 2:17])
+site <- unique(dat.filt[, c(1, 3:17)])
 duplicated(site$EventID)
 
 ## Fish data ##
@@ -67,11 +67,11 @@ There is a large range of data in terms of presense/absense and biomass. This la
 For this filtering I will remove species that occur in less that 1% of seines. These species can be thought of as exceedingly rare. This will be done by converining mass to presence/absence and calculating relative fequency of occurance across all seines. 
 ```{r remove rare}
 ## Covnert to P/A ##
-fish.pa <- ifelse(fish[,2:96] > 0, 1, 0)
+fish.pa <- ifelse(fish[,2:88] > 0, 1, 0)
 fish.pa <- data.frame(cbind(EventID = fish$EventID), fish.pa)
 
 ## Calculate species totals ##
-sp.total <- colSums(fish.pa[,2:96])
+sp.total <- colSums(fish.pa[,2:88])
 
 ## Calculate freq of occurance ##
 sp.fq <- (sp.total/nrow(fish)) * 100
@@ -82,9 +82,6 @@ rare.sp <- rare.sp[!is.na(rare.sp)]
 
 ## Filter out rare speces ##
 fish <- fish[, -which(names(fish) %in% names(rare.sp))]
-
-## Remove event where no common fish were caught ##
-fish <- filter(fish, EventID != 782)
 ```
 
 ### Removing hyper and hypo abundant Events
@@ -114,15 +111,13 @@ ggplot(event.sum) +
 ggplot(event.sum) +
   geom_histogram(aes(log(Sum, base = 10)))
 
-range(event.sum$Sum^0.25)
-
 quantile(log(event.sum$Sum, base = 10), probs = c(0.025, 0.975))
 ```
 
 I will filter out Events that with total catches outside 2 standard deviations of the average catch
 ```{r}
 filt <- event.sum %>%
-  filter(log(Sum, base = 10) > 0.6231138 & log(Sum, base = 10) < 4.2166507)
+  filter(log(Sum, base = 10) > 0.5766482 & log(Sum, base = 10) < 4.2300721)
 
 ggplot(filt) +
   geom_histogram(aes(log(Sum, 10)))
@@ -174,13 +169,19 @@ biplot(pca, cex = .5)
 ### NMDS
 ```{r nmds}
 mds <- metaMDS(dist.bray)
-plot(mds$points, asp = 1, xlab = "nMDS1", ylab = "nMDS")
-text(mds$points[,1], mds$points[,2],labels=row.names(mds$points),pos=3,cex=0.5) 
+mds.xy <- data.frame(mds$points)
+mds.xy$EventID <- fish$EventID
+mds.xy <- merge(mds.xy, site, by = "EventID", all.x = TRUE)
+
+
+ggplot(mds.xy) +
+  geom_point(aes(MDS1, MDS2, color = month))
 ```
 
 
 ## Model - PERMANOVA
 ```{r perm}
-mod1 <- adonis2(dist.bray ~ habitat)
+mod1 <- adonis2(dist.bray ~ habitat + month + temp_c, data = mds.xy, permutations = 9999)
+mod1
 ```
 
