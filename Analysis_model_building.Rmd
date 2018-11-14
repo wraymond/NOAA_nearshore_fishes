@@ -29,12 +29,13 @@ theme_set(theme_classic())
 ## Exploring the data
 ```{r explor}
 dat.sum <- dat %>%
-  group_by(EventID, SpCode) %>% 
+  group_by(EventID) %>% 
   summarise(SpSum = sum(mass_g))
   
 ggplot(dat.sum) +
-  geom_histogram(aes(SpSum)) +
-  facet_wrap(~SpCode)
+  geom_histogram(aes(SpSum / 1000)) +
+  labs(x = "Total seine mass (Kg)", y = "count") +
+  theme(text = element_text(size = 25), legend.position = "none")
 ```
 
 
@@ -48,17 +49,39 @@ dat.filt <- dat %>%
 
 ## Site data ##
 names(dat.filt)
-site <- unique(dat.filt[, c(1, 3:17)])
+site <- unique(dat.filt[, c(1, 3:17, 23)])
 duplicated(site$EventID)
 
-## Fish data ##
-fish <- dat.filt[, c(1, 2, 18)]
-duplicated(fish)
+## Fish data unfiltered ##
+fish <- dat[, c(1, 2, 18)]
 fish <- spread(fish, SpCode, mass_g)
 fish[is.na(fish)] <- 0
 colSums(fish) # UNLARV has no data whatsoever
-fish <- fish[, c(1:76, 78:89)] # removing UNLARV
+fish <- fish[, c(1:84, 86:97)] # removing UNLARV
+
+## Fish data filtered ##
+fish.filt <- dat.filt[, c(1, 2, 18)]
+duplicated(fish.filt)
+fish.filt <- spread(fish.filt, SpCode, mass_g)
+fish.filt[is.na(fish.filt)] <- 0
+colSums(fish.filt) # UNLARV has no data whatsoever
+fish.filt <- fish.filt[, c(1:76, 78:89)] # removing UNLARV
 ```
+
+## Filtering of Salmon only
+My second objective is focused on the role of habitat on salmonids
+```{r}
+## Salmon Only ##
+sal <- dat %>%
+  filter(SpCode == "PINKSAL" | SpCode == "CHINSAL" | SpCode == "CHUMSAL" | SpCode == "COHOSAL" | SpCode == "SOCKSAL")
+
+## Spread ##
+fish.sal <- sal[, c(1, 2, 18)]
+fish.sal <- spread(fish.sal, SpCode, mass_g)
+fish.sal[is.na(fish.sal)] <- 0
+colSums(fish.sal)
+```
+
 
 ## Data filtering
 There is a large range of data in terms of presense/absense and biomass. This large range of values that have highly skewed distributions will mess with interpretation of our multivariate response. What follows are some filtering procedures to try to control extreme values.
@@ -66,12 +89,13 @@ There is a large range of data in terms of presense/absense and biomass. This la
 ### Remove rare species
 For this filtering I will remove species that occur in less that 1% of seines. These species can be thought of as exceedingly rare. This will be done by converining mass to presence/absence and calculating relative fequency of occurance across all seines. 
 ```{r remove rare}
+### Unfiltered ###
 ## Covnert to P/A ##
-fish.pa <- ifelse(fish[,2:88] > 0, 1, 0)
+fish.pa <- ifelse(fish[,2:96] > 0, 1, 0)
 fish.pa <- data.frame(cbind(EventID = fish$EventID), fish.pa)
 
 ## Calculate species totals ##
-sp.total <- colSums(fish.pa[,2:88])
+sp.total <- colSums(fish.pa[,2:96])
 
 ## Calculate freq of occurance ##
 sp.fq <- (sp.total/nrow(fish)) * 100
@@ -82,18 +106,39 @@ rare.sp <- rare.sp[!is.na(rare.sp)]
 
 ## Filter out rare speces ##
 fish <- fish[, -which(names(fish) %in% names(rare.sp))]
+
+### Filtered ###
+## Covnert to P/A ##
+fish.filt.pa <- ifelse(fish.filt[,2:88] > 0, 1, 0)
+fish.filt.pa <- data.frame(cbind(EventID = fish.filt$EventID), fish.filt.pa)
+
+## Calculate species totals ##
+sp.filt.total <- colSums(fish.filt.pa[,2:88])
+
+## Calculate freq of occurance ##
+sp.filt.fq <- (sp.filt.total/nrow(fish.filt)) * 100
+
+## Rare species ##
+rare.filt.sp <- ifelse(sp.filt.fq  < 1, names(sp.filt.fq ), NA)
+rare.filt.sp <- rare.filt.sp[!is.na(rare.filt.sp)]
+
+## Filter out rare speces ##
+fish.filt <- fish.filt[, -which(names(fish.filt) %in% names(rare.filt.sp))]
 ```
 
 ### Removing hyper and hypo abundant Events
 First we need to calculate the total fish catch at each site and plot. I will plot raw and 4th root transformed data and log stransformed.
 ```{r event sums}
+### Unfiltered ###
 ## EventID sums ##
 event.sum <- data.frame(EventID = fish$EventID,
-                        Sum = rowSums(fish[, 2:60]))
+                        Sum = rowSums(fish[, 2:65]))
 ## Plots ##
 # Box plots #
 ggplot(event.sum) +
-  geom_boxplot(aes(x = EventID, y = Sum))
+  geom_boxplot(aes(x = EventID, y = Sum)) +
+  labs(x = "Total seine mass (Kg)", y = "count") +
+  theme(text = element_text(size = 25), legend.position = "none")
 
 ggplot(event.sum) +
   geom_boxplot(aes(x = EventID, y = (Sum)^0.25))
@@ -103,37 +148,70 @@ ggplot(event.sum) +
 
 # Histograms #
 ggplot(event.sum) +
-  geom_histogram(aes(Sum))
+  geom_histogram(aes(Sum / 1000)) +
+  labs(x = "Total seine mass (Kg)", y = "count") +
+  theme(text = element_text(size = 25), legend.position = "none")
 
 ggplot(event.sum) +
-  geom_histogram(aes((Sum)^.25))
-
-ggplot(event.sum) +
-  geom_histogram(aes(log(Sum, base = 10)))
+  geom_histogram(aes((Sum/1000)^.1)) +
+  labs(x = "10th root total seine mass (Kg)", y = "count") +
+  theme(text = element_text(size = 25), legend.position = "none")
 
 quantile(log(event.sum$Sum, base = 10), probs = c(0.025, 0.975))
+
+### Filtered ###
+## Event Sums ##
+event.filt.sum <- data.frame(EventID = fish.filt$EventID,
+                        Sum = rowSums(fish.filt[, 2:60]))
+ggplot(event.filt.sum) +
+  geom_histogram(aes((Sum/1000)^.1)) +
+  labs(x = "10th root total seine mass (Kg)", y = "count") +
+  theme(text = element_text(size = 25), legend.position = "none")
+
+quantile(event.filt.sum$Sum^.1, probs = c(0.025, 0.975))
+
+### Salmon Data ##
+event.sum.sal <- data.frame(EventID = fish.sal$EventID,
+                        Sum = rowSums(fish.sal[, 2:6]))
+
+ggplot(event.sum.sal) +
+  geom_histogram(aes((Sum/1000)^.1))
 ```
 
 I will filter out Events that with total catches outside 2 standard deviations of the average catch
 ```{r}
-filt <- event.sum %>%
-  filter(log(Sum, base = 10) > 0.5766482 & log(Sum, base = 10) < 4.2300721)
+## All data ##
+filt <- event.filt.sum %>%
+  filter(Sum^.1 > 1.142019 & Sum^.1 < 2.648552)
 
 ggplot(filt) +
-  geom_histogram(aes(log(Sum, 10)))
+  geom_histogram(aes((Sum/1000)^.1)) +
+  labs(x = "10th root total seine mass (Kg)", y = "count") +
+  theme(text = element_text(size = 25), legend.position = "none")
 
-fish <- subset(fish, fish$EventID %in% filt$EventID)
+fish.filt <- subset(fish.filt, fish.filt$EventID %in% filt$EventID)
+
+## Salmon ##
+quantile(event.sum.sal$Sum^.1, probs = c(0.025, 0.975))
+
+filt.sal <- event.sum.sal %>%
+  filter(Sum^.1 > 1.05864 & Sum^.1 < 2.76272)
+
+ggplot(filt.sal) +
+  geom_histogram(aes((Sum/1000)^.1)) +
+  labs(x = "10th root total seine mass (Kg)", y = "count") +
+  theme(text = element_text(size = 25), legend.position = "none")
+
+fish.filt.sal <- subset(fish.sal, fish.sal$EventID %in% filt.sal$EventID)
 ```
-
 
 ### Transformations
 This step could be considered optional, however, when looking at the data there are quite a few species with long right tail distributions. I will use a log transformation becasue the data are HIGHLY skewed. 
 ```{r transformations}
 ## Transform ##
-fish.trsfm <- data.frame(log(fish[, 2:60], base = 10))
+fish.trsfm <- data.frame((fish.filt[, 2:60])^.1)
 
-## Convert Inf to Zero ##
-fish.trsfm[mapply(is.infinite, fish.trsfm)] <- 0
+fish.sal.trsfm <- data.frame((fish.filt.sal[, 2:6])^.1)
 ```
 
 ### Standarization
@@ -143,18 +221,18 @@ I will use a double standardization to
 ```{r standardization}
 ## To species maximum ##
 fish.std <- scale(fish.trsfm, center = FALSE, scale = apply(fish.trsfm, 2, max))
+sal.std <- scale(fish.sal.trsfm, center = FALSE, scale = apply(fish.sal.trsfm, 2, max))
 
 ## To EventID total ##
 fish.std <- fish.std/rowSums(fish.trsfm)
+sal.std <- sal.std/rowSums(fish.sal.trsfm)
 ```
 
 ## Dissimilarity
 Calculate dissimilarity matrix in preparation for PERMANOVA. I will use bray-curtis method as is recommended for non-multivariate normal data
 ```{r dissim}
 dist.bray <- vegdist(fish.std, method = "bray")
-
-## Assign row names as event ID ##
-row.names(mds$points) <- fish$EventID
+dist.bray.sal <- vegdist(sal.std, method = "bray")
 ```
 
 ## PCA
@@ -162,26 +240,42 @@ There are a few variablibes that are driving the dissimilarity
 ```{r}
 pca <- princomp(dist.bray)
 summary(pca)
-biplot(pca, cex = .5)
-```
+biplot(pca)
 
+pca <- princomp(dist.bray.sal)
+summary(pca)
+biplot(pca)
+```
 
 ### NMDS
 ```{r nmds}
-mds <- metaMDS(dist.bray)
+## All ##
+mds <- metaMDS(dist.bray, k = 3, trymax = 100)
+row.names(mds$points) <- fish.filt$EventID
 mds.xy <- data.frame(mds$points)
-mds.xy$EventID <- fish$EventID
+mds.xy$EventID <- fish.filt$EventID
 mds.xy <- merge(mds.xy, site, by = "EventID", all.x = TRUE)
 
-
 ggplot(mds.xy) +
-  geom_point(aes(MDS1, MDS2, color = month))
+  geom_point(aes(MDS1, MDS2, color = month)) +
+  scale_color_brewer(palette = "Dark2")
+
+## Salmon ##
+mds.sal <- metaMDS(dist.bray.sal, k = 2, trymax =  100)
+row.names(mds.sal$points) <- fish.filt.sal$EventID
+mds.sal.xy <- data.frame(mds.sal$points)
+mds.sal.xy$EventID <- fish.filt.sal$EventID
+mds.sal.xy <- merge(mds.sal.xy, site, by = "EventID", all.x = TRUE)
+
+ggplot(mds.sal.xy) +
+  geom_point(aes(MDS1, MDS2, color = month)) +
+  scale_color_brewer(palette = "Dark2")
 ```
 
 
 ## Model - PERMANOVA
 ```{r perm}
-mod1 <- adonis2(dist.bray ~ habitat + month + temp_c, data = mds.xy, permutations = 9999)
+mod1 <- adonis2(dist.bray ~ habitat + AtlasRegion + month, data = mds.xy, permutations = 9999)
 mod1
 ```
 
